@@ -1,54 +1,40 @@
+const { REST, Routes } = require('discord.js');
+const fs = require('node:fs');
+const path = require('node:path');
 require('dotenv').config();
-const { REST, Routes, ApplicationCommandType, ApplicationCommandOptionType } = require('discord.js');
+const clientId = process.env.CLIENT_ID
+const guildId = process.env.GUILD_ID
+const token = process.env.TOKEN
 
-const commands = [{
-    name: 'opa',
-    description: 'Manda um eae!',
-}, {
-    name: 'sobre',
-    description: 'Explico um pouco sobre alguém',
-    options: [
-        {
-            name: 'escolha',
-            description: 'Escolha qm será METAFORADO pelo bot',
-            type: ApplicationCommandOptionType.String,
-            choices: [
-                {
-                    name: 'ComBot',
-                    value: 'bot'
-                },
-                {
-                    name: 'Combo',
-                    value: 'criador'
-                }
-            ],
-            required: true
+const commands = [];
+// Grab all the command folders from the commands directory you created earlier
+const foldersPath = path.join(__dirname, 'commands');
+const commandFolders = fs.readdirSync(foldersPath);
+
+for (const folder of commandFolders) {
+    const commandsPath = path.join(foldersPath, folder);
+    const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith('.js'));
+    for (const file of commandFiles) {
+        const filePath = path.join(commandsPath, file);
+        const command = require(filePath);
+        if ('data' in command && 'execute' in command) {
+            commands.push(command.data.toJSON());
+        } else {
+            console.log(`[AVISO] O comando em ${filePath} não possui um componente.`);
         }
-    ]
+    }
+}
 
-},
-{
-    name: 'memesvistos',
-    description: 'Atualiza a quantidade de memes na lista, baseado em quantos foram vistos',
-    options: [
-        {
-            name: 'valor',
-            description: 'Insira o valor de memes vistos',
-            type: ApplicationCommandOptionType.Number,
-            required: true
-        }
-    ]
-
-}];
-const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+const rest = new REST().setToken(token);
 
 (async () => {
     try {
-        console.log('Registrando comandos');
-        await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
-            { body: commands });
-        console.log("Comandos Registrados");
+        console.log(`Atualizando ${commands.length} comandos.`);
+
+        const data = await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commands });
+
+        console.log(`${data.length} comandos foram atualizados.`);
     } catch (error) {
-        console.log(`Ocorreu um erro: ${error}`)
+        console.error(error);
     }
 })();
