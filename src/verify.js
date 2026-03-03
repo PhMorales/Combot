@@ -20,7 +20,9 @@ async function Verify(reaction, client, db, user) {
         const usuario = await reaction.message.guild.members.fetch(user.id)
         const cargos = usuario.roles.cache
         if (cargos.some(role => role.name === "Dono") || cargos.some(role => role.name === "Administradores") || cargos.some(role => role.name === "Moderadores") || cargos.some(role => role.name === "Mods da Twitch")) {
-            reaction.message.delete()
+            if (reaction.emoji.name === "✅") {
+                reaction.message.delete()
+            } else return
         } else return
 
     }
